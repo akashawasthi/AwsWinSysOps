@@ -51,30 +51,27 @@ AWS CLI is a unified tool to manage AWS services via a command line. [Learn more
 AWS SNS allows to create *topics* and *subscriptions* to them in order to send notifications for alarms  
 
 #### 5.2.1 ![Action](./etc/action01.png) **Action**: Create new SNS Topic  
- * via AWS Console - refer [documentation...](http://docs.aws.amazon.com/sns/latest/dg/CreateTopic.html "AWS Documentation")  
- * *or* via AWS CLI using following template:  
+ * via AWS Console (refer [documentation...](http://docs.aws.amazon.com/sns/latest/dg/CreateTopic.html "AWS Documentation")) *or* via AWS CLI using following template:  
 
-SNS Topic Name|AWS CLI Template  
+SNS Topic|AWS CLI Template  
 --------------|----------------  
 **Name**: `AwsWinSysOps-Check`; **Comment**: Create a new SNS Topic, get `SNS-TOPIC-ARN` returned by AWS|`aws sns-create-topic AwsWinSysOps-Check`
 
 #### 5.2.2 ![Action](./etc/action01.png) **Action**: Subscribe to a Topic  
- * via AWS Console - refer [documentation...](http://docs.aws.amazon.com/sns/latest/dg/SubscribeTopic.html "AWS Documentation")  
- * *or* via AWS CLI using following template:  
+ * via AWS Console (refer [documentation...](http://docs.aws.amazon.com/sns/latest/dg/SubscribeTopic.html "AWS Documentation")) *or* via AWS CLI using following template:  
 
-SNS Topic ARN|AWS CLI Template  
+SNS Subscription|AWS CLI Template  
 -------------|----------------  
-**Name**: `SNS-TOPIC-ARN`; SNS Subscribers: `EMAILS-IDS`; **Comment**: Create new subscription for SNS Topic `AwsWinSysOps-Check`|`aws sns-subscribe <SNS-TOPIC-ARN> --protocol email --endpoint <EMAILS-IDS>`
+**SNS Subscribers**: `EMAILS-IDS`; **Comment**: Create new subscription for SNS Topic `SNS-TOPIC-ARN` (`ARN` for `AwsWinSysOps-Check`)|`aws sns-subscribe <SNS-TOPIC-ARN> --protocol email --endpoint <EMAILS-IDS>`
 
 ### 5.3 AWS CloudWatch Alarms
 AWS CloudWatch allows to create Alarms at metric thresholds...  
 
 #### 5.3.1 Create new CloudWatch Alarms  
- * ![Action](./etc/action01.png) **Action**: None. This is handled in script `AwsWinSysOps_CreateAlarms.bat` above.  
- * via AWS Console - refer [documentation...](http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/US_AlarmAtThresholdEC2.html "AWS Documentation")  
- * *or* via AWS CLI using following templates:  
+ * ![Action](./etc/action01.png) **Action**: None. This is handled in script `AwsWinSysOps_CreateAlarms.bat` above. Templates below are only for reference.  
+ * via AWS Console (refer [documentation...](http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/US_AlarmAtThresholdEC2.html "AWS Documentation")) *or* via AWS CLI using following templates:  
 
-CloudWatch Alarm Name|AWS CLI Template  
+CloudWatch Alarm|AWS CLI Template  
 ---------------------|----------------  
 **Name**: `AwsWinSysOps_<INSTANCE-NAME>_StatusCheckFailed`; **Threshold**: StatusCheckFailed >= 1 for 2 minutes; **Comment**: 1 alarm for each instance|`aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_<INSTANCE-NAME>_StatusCheckFailed --alarm-description "Alarm when Status Check fails" --metric-name StatusCheckFailed --namespace AWS/EC2 --statistic Maximum --dimensions Name=InstanceId,Value=<INSTANCE-ID> --period 60 --unit Count --evaluation-periods 2 --threshold 1 --comparison-operator GreaterThanOrEqualToThreshold --alarm-actions <SNS-TOPIC-ARN>`  
 **Name**: `AwsWinSysOps_<INSTANCE-NAME>_CPUUtilization`; **Threshold**: CPUUtilization > 70 for 10 minutes; **Comment**: 1 alarm for each instance|`aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_<INSTANCE-NAME>_CPUUtilization --alarm-description "Alarm when CPU exceeds 70%" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold --dimensions Name=InstanceId,Value=<INSTANCE-ID> --evaluation-periods 2 --unit Percent --alarm-actions <SNS-TOPIC-ARN>`  
