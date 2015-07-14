@@ -1,0 +1,6 @@
+# .gitignore to keep empty Logs folder
+
+# ignore all files in this directory
+*
+# ... except for this one
+!.gitingore
