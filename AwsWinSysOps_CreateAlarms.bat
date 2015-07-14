@@ -2,22 +2,22 @@ REM This script iterates through EC2 instances and creates CloudWatch Alarms for
 @echo off
 
 REM Configure the SNS-TOPIC-ARN to be used for CloudWatch Alarm notifications
-set sns_topic_arn=xyz-sns-xyz-topic-xyz-arn
+set sns_topic_arn=SNS-TOPIC-ARN
 set test_only_dont_create_alarms=true
 
 REM Get all instance ids and names
 REM e.g. aws ec2 describe-instances --query "Reservations[].Instances[].[InstanceId,Tags[?Key==`Name`].Value]"
 REM Optionally apply any filters as required
-REM e.g. --filters 'Name=vpc-id,Values=vpc-a9a9a9a9'
-REM e.g. --filters 'Name=tag:Name,Values=prod-server-*'
+REM e.g. --filters "Name=vpc-id,Values=vpc-a9a9a9a9"
+REM e.g. --filters "Name=tag:Name,Values=prod-server-*"
 set AwsCliCommandGetEC2Instances=aws ec2 describe-instances --query "Reservations[].Instances[].[InstanceId,Tags[?Key==`Name`].Value]" --output text
 
 REM Setup CreateAlarm templates for alarms
 set AwsCliCommandCreateAlarmTemplate1_StatusCheckFailed=aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_StatusCheckFailed_[INSTANCE-NAME] --alarm-description 'Alarm when Status Check fails' --metric-name StatusCheckFailed --namespace AWS/EC2 --statistic Maximum --dimensions Name=InstanceId,Value=[INSTANCE-ID] --period 60 --unit Count --evaluation-periods 2 --threshold 1 --comparison-operator GreaterThanOrEqualToThreshold --alarm-actions [SNS-TOPIC-ARN]
-set AwsCliCommandCreateAlarmTemplate2_CPUUtilization=aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_CPUUtilization_[INSTANCE-NAME] --alarm-description 'Alarm when CPU exceeds 70%' --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold  --dimensions  Name=InstanceId,Value=[INSTANCE-ID]  --evaluation-periods 2 --unit Percent --alarm-actions [SNS-TOPIC-ARN]
-set AwsCliCommandCreateAlarmTemplate3_MemoryUtilization=aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_MemoryUtilization_[INSTANCE-NAME] --alarm-description 'Alarm when Memory exceeds 80%' --metric-name MemoryUtilization --namespace System/Windows --statistic Average --period 300 --threshold 80 --comparison-operator GreaterThanThreshold  --dimensions  Name=InstanceId,Value=[INSTANCE-ID]  --evaluation-periods 2 --unit Percent --alarm-actions [SNS-TOPIC-ARN]
+set AwsCliCommandCreateAlarmTemplate2_CPUUtilization=aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_CPUUtilization_[INSTANCE-NAME] --alarm-description 'Alarm when CPU exceeds 70 percent' --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold  --dimensions  Name=InstanceId,Value=[INSTANCE-ID]  --evaluation-periods 2 --unit Percent --alarm-actions [SNS-TOPIC-ARN]
+set AwsCliCommandCreateAlarmTemplate3_MemoryUtilization=aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_MemoryUtilization_[INSTANCE-NAME] --alarm-description 'Alarm when Memory exceeds 80 percent' --metric-name MemoryUtilization --namespace System/Windows --statistic Average --period 300 --threshold 80 --comparison-operator GreaterThanThreshold  --dimensions  Name=InstanceId,Value=[INSTANCE-ID]  --evaluation-periods 2 --unit Percent --alarm-actions [SNS-TOPIC-ARN]
 set AwsCliCommandCreateAlarmTemplate4_WindowsServicesStopped=aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_WindowsServicesStopped_[INSTANCE-NAME] --alarm-description 'Alarm when count of Stopped Windows Services exceeds 0' --metric-name WindowsServicesStopped --namespace System/Windows --statistic Maximum --dimensions Name=InstanceId,Value=[INSTANCE-ID] --period 300 --unit Count --evaluation-periods 2 --threshold 1 --comparison-operator GreaterThanOrEqualToThreshold --alarm-actions [SNS-TOPIC-ARN]
-rem set AwsCliCommandCreateAlarmTemplate5_VolumeUtilization=aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_VolumeUtilization_[INSTANCE-NAME]_[DRIVE-LETTER] --alarm-description 'Alarm when Disk Space exceeds 80%' --metric-name VolumeUtilization --namespace System/Windows --statistic Average --period 300 --threshold 80 --comparison-operator GreaterThanThreshold  --dimensions  Name=InstanceId,Value=[INSTANCE-ID] Name=Drive-Letter,Value=[DRIVE-LETTER]:  --evaluation-periods 2 --unit Percent --alarm-actions [SNS-TOPIC-ARN]
+set AwsCliCommandCreateAlarmTemplate5_VolumeUtilization=aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_VolumeUtilization_[INSTANCE-NAME]_[DRIVE-LETTER] --alarm-description 'Alarm when Disk Space exceeds 80 percent' --metric-name VolumeUtilization --namespace System/Windows --statistic Average --period 300 --threshold 80 --comparison-operator GreaterThanThreshold  --dimensions  Name=InstanceId,Value=[INSTANCE-ID] Name=Drive-Letter,Value=[DRIVE-LETTER]:  --evaluation-periods 2 --unit Percent --alarm-actions [SNS-TOPIC-ARN]
 
 setlocal EnableDelayedExpansion
 set /a counter=1
@@ -40,7 +40,9 @@ for /F "tokens=*" %%A in ('%AwsCliCommandGetEC2Instances%') do (
 	echo TEST_ONLY_DONT_CREATE_ALARMS is set as %test_only_dont_create_alarms%
 	echo ::::
 	CALL :CreateAlarms !instance_id! !instance_name!
-	pause
+	
+	REM Uncomment the "pause" below to wait after each instance
+	REM pause
   ) else (
     rem Odd numbered lines have instance Ids
 	set instance_id=!value!
@@ -62,6 +64,13 @@ GOTO :eof
 	CALL :CreateAlarm !instance_id! !instance_name! "!AwsCliCommandCreateAlarmTemplate2_CPUUtilization!"
 	CALL :CreateAlarm !instance_id! !instance_name! "!AwsCliCommandCreateAlarmTemplate3_MemoryUtilization!"
 	CALL :CreateAlarm !instance_id! !instance_name! "!AwsCliCommandCreateAlarmTemplate4_WindowsServicesStopped!"
+
+	REM Create alarm for 5 disk drive letters
+	CALL :CreateAlarm !instance_id! !instance_name! "!AwsCliCommandCreateAlarmTemplate5_VolumeUtilization:[DRIVE-LETTER]=C!"
+	CALL :CreateAlarm !instance_id! !instance_name! "!AwsCliCommandCreateAlarmTemplate5_VolumeUtilization:[DRIVE-LETTER]=D!"
+	CALL :CreateAlarm !instance_id! !instance_name! "!AwsCliCommandCreateAlarmTemplate5_VolumeUtilization:[DRIVE-LETTER]=E!"
+	CALL :CreateAlarm !instance_id! !instance_name! "!AwsCliCommandCreateAlarmTemplate5_VolumeUtilization:[DRIVE-LETTER]=F!"
+	CALL :CreateAlarm !instance_id! !instance_name! "!AwsCliCommandCreateAlarmTemplate5_VolumeUtilization:[DRIVE-LETTER]=G!"
 ENDLOCAL & SET _result=1
 GOTO :eof
 
@@ -76,20 +85,28 @@ GOTO :eof
 	REM Get CreateAlarm template and set it up for this instance
 	set AwsCliCommandCreateAlarm=!create_alarm_template!
 
+	REM set up instance name
 	set "to_replace=!instance_name!"
 	for %%i in ("!to_replace!") do set "AwsCliCommandCreateAlarm=!AwsCliCommandCreateAlarm:[INSTANCE-NAME]=%%~i!"
 	rem set AwsCliCommandCreateAlarm=!AwsCliCommandCreateAlarm:[INSTANCE-NAME]=%instance_name%!
 
+	REM set up instance
 	set "to_replace=!instance_id!"
 	for %%j in ("!to_replace!") do set "AwsCliCommandCreateAlarm=!AwsCliCommandCreateAlarm:[INSTANCE-ID]=%%~j!"
 	rem set AwsCliCommandCreateAlarm=!AwsCliCommandCreateAlarm:[INSTANCE-ID]=%instance_id%!
 
+	REM set up sns topic arn
 	set AwsCliCommandCreateAlarm=!AwsCliCommandCreateAlarm:[SNS-TOPIC-ARN]=%sns_topic_arn%!
+
+	REM remove "
+	set AwsCliCommandCreateAlarm=%AwsCliCommandCreateAlarm:"=%
+	REM replace ' with "
+	set AwsCliCommandCreateAlarm=%AwsCliCommandCreateAlarm:'="%
 
 	echo EXECUTING: !AwsCliCommandCreateAlarm!
 	REM Execute CreateAlarm for this instance
-	if %test_only_dont_create_alarms%=='false' (
-	  rem !AwsCliCommandCreateAlarm!
+	if %test_only_dont_create_alarms%==false (
+	  !AwsCliCommandCreateAlarm!
 	)
 ENDLOCAL & SET _result=1
 GOTO :eof
