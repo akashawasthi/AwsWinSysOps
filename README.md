@@ -6,20 +6,25 @@
 
 **Note**: In order to maintain a single *installation* of AwsWinSysOps in your environment, it is recommended that you place AwsWinSysOps in a *shared folder* that is accessible from each instance that needs to be monitored. However, you can also place it on each of your instances if you wish.  
 
-## 1. AwsWinSysOps scripts
+## 1. AwsWinSysOps scripts  
+
 ### 1.1 **AwsWinSysOps_Config.bat**  
  * contains Windows credentials and other settings  
  * ![Action](./etc/action01.png) **Action**: Edit the file to update your Windows Username and Password.  
+
 ### 1.2 **awscreds.conf**  
  * contains AWS credentials  
  * ![Action](./etc/action01.png) **Action**: Create an AWS Identity and Access Management (IAM) user with at least [CloudWatch PutMetricData](http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/UsingIAM.html "AWS Documentation") permissions.  
  * ![Action](./etc/action01.png) **Action**: Edit the file to update your AWS AccessKeyId and SecretKey.  
+
 ### 1.3 **AwsWinSysOps_CreateTask.bat**  
  * contains [schtasks](https://msdn.microsoft.com/en-us/library/windows/desktop/bb736357.aspx "Microsoft Windows Documentation") command to create a *Windows Scheduled Task* on each instance that needs to be monitored  
  * ![Action](./etc/action01.png) **Action**: On **each instance** that needs to be monitored, open command prompt (*Run as Administrator*) and run `"\\<SERVER_IP_OR_NAME>\<SHARED_FOLDER>\AwsWinSysOps\AwsWinSysOps_CreateTask.bat"`.  
+
 ### 1.4 **AwsWinSysOps_Execute.bat**  
  * contains *PowerShell* commands to execute the *.ps1* monitoring scripts that capture instance metrics and send them to AWS CloudWatch. Later, these metrics can be used to create CloudWatch Alarms/Notifications.  
  * ![Action](./etc/action01.png) **Action**: None. This will be executed every 5 minutes from the *Windows Scheduled Task* on each instance that is being monitored.  
+
 ### 1.5 **AwsWinSysOps_CreateAlarms.bat**  
  * contains AWS CLI batch commands to create CloudWatch Alarms/Notifications using the instance metrics captured earlier. Review *#5* below before proceeding.  
  * ![Action](./etc/action01.png) **Action**: Edit the file to update your `SNS-TOPIC-ARN`. (See *#5.2* below)  
@@ -80,11 +85,11 @@ AWS CloudWatch allows to create Alarms at metric thresholds...
 
 CloudWatch Alarm|AWS CLI Template  
 ---------------------|----------------  
-**Name**: `AwsWinSysOps_<INSTANCE-NAME>_StatusCheckFailed`; **Threshold**: StatusCheckFailed >= 1 for 2 minutes; **Comment**: 1 alarm for each instance|`aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_<INSTANCE-NAME>_StatusCheckFailed --alarm-description "Alarm when Status Check fails" --metric-name StatusCheckFailed --namespace AWS/EC2 --statistic Maximum --dimensions Name=InstanceId,Value=<INSTANCE-ID> --period 60 --unit Count --evaluation-periods 2 --threshold 1 --comparison-operator GreaterThanOrEqualToThreshold --alarm-actions <SNS-TOPIC-ARN>`  
-**Name**: `AwsWinSysOps_<INSTANCE-NAME>_CPUUtilization`; **Threshold**: CPUUtilization > 70 for 10 minutes; **Comment**: 1 alarm for each instance|`aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_<INSTANCE-NAME>_CPUUtilization --alarm-description "Alarm when CPU exceeds 70%" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold --dimensions Name=InstanceId,Value=<INSTANCE-ID> --evaluation-periods 2 --unit Percent --alarm-actions <SNS-TOPIC-ARN>`  
-**Name**: `AwsWinSysOps_<INSTANCE-NAME>_MemoryUtilization`; **Threshold**: MemoryUtilization > 80 for 10 minutes; **Comment**: 1 alarm for each instance|`aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_<INSTANCE-NAME>_MemoryUtilization --alarm-description "Alarm when Memory exceeds 80%" --metric-name MemoryUtilization --namespace System/Windows --statistic Average --period 300 --threshold 80 --comparison-operator GreaterThanThreshold --dimensions Name=InstanceId,Value=<INSTANCE-ID> --evaluation-periods 2 --unit Percent --alarm-actions <SNS-TOPIC-ARN>`  
-**Name**: `AwsWinSysOps_<INSTANCE-NAME>_WindowsServicesStopped`; **Threshold**: WindowsServicesStopped >= 1 for 10 minutes; **Comment**: 1 alarm for each instance|`aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_<INSTANCE-NAME>_WindowsServicesStopped --alarm-description "Alarm when count of Stopped Windows Services exceeds 0" --metric-name WindowsServicesStopped --namespace System/Windows --statistic Maximum --dimensions Name=InstanceId,Value=<INSTANCE-ID> --period 300 --unit Count --evaluation-periods 2 --threshold 1 --comparison-operator GreaterThanOrEqualToThreshold --alarm-actions <SNS-TOPIC-ARN>`  
-**Name**: `AwsWinSysOps_<INSTANCE-NAME>_<DRIVE-LETTER>_VolumeUtilization`; **Threshold**: VolumeUtilization > 80 for 10 minutes; **Comment**: 1 alarm for each drive|`aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_<INSTANCE-NAME>_<DRIVE-LETTER>_VolumeUtilization --alarm-description "Alarm when Disk Space exceeds 80%" --metric-name VolumeUtilization --namespace System/Windows --statistic Average --period 300 --threshold 80 --comparison-operator GreaterThanThreshold --dimensions Name=InstanceId,Value=<INSTANCE-ID> Name=Drive-Letter,Value=<DRIVE-LETTER>: --evaluation-periods 2 --unit Percent --alarm-actions <SNS-TOPIC-ARN>`  
+**Name**: `AwsWinSysOps_StatusCheckFailed_[INSTANCE-NAME]`; **Threshold**: StatusCheckFailed >= 1 for 2 minutes; **Comment**: 1 alarm for each instance|`aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_StatusCheckFailed_[INSTANCE-NAME] --alarm-description 'Alarm when Status Check fails' --metric-name StatusCheckFailed --namespace AWS/EC2 --statistic Maximum --dimensions Name=InstanceId,Value=[INSTANCE-ID] --period 60 --unit Count --evaluation-periods 2 --threshold 1 --comparison-operator GreaterThanOrEqualToThreshold --alarm-actions [SNS-TOPIC-ARN]`  
+**Name**: `AwsWinSysOps_CPUUtilization_[INSTANCE-NAME]`; **Threshold**: CPUUtilization > 70 for 10 minutes; **Comment**: 1 alarm for each instance|`aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_CPUUtilization_[INSTANCE-NAME] --alarm-description 'Alarm when CPU exceeds 70 percent' --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold  --dimensions  Name=InstanceId,Value=[INSTANCE-ID]  --evaluation-periods 2 --unit Percent --alarm-actions [SNS-TOPIC-ARN]`  
+**Name**: `AwsWinSysOps_MemoryUtilization_[INSTANCE-NAME]`; **Threshold**: MemoryUtilization > 80 for 10 minutes; **Comment**: 1 alarm for each instance|`aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_MemoryUtilization_[INSTANCE-NAME] --alarm-description 'Alarm when Memory exceeds 80 percent' --metric-name MemoryUtilization --namespace System/Windows --statistic Average --period 300 --threshold 80 --comparison-operator GreaterThanThreshold  --dimensions  Name=InstanceId,Value=[INSTANCE-ID]  --evaluation-periods 2 --unit Percent --alarm-actions [SNS-TOPIC-ARN]`  
+**Name**: `AwsWinSysOps_WindowsServicesStopped_[INSTANCE-NAME]`; **Threshold**: WindowsServicesStopped >= 1 for 10 minutes; **Comment**: 1 alarm for each instance|`aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_WindowsServicesStopped_[INSTANCE-NAME] --alarm-description 'Alarm when count of Stopped Windows Services exceeds 0' --metric-name WindowsServicesStopped --namespace System/Windows --statistic Maximum --dimensions Name=InstanceId,Value=[INSTANCE-ID] --period 300 --unit Count --evaluation-periods 2 --threshold 1 --comparison-operator GreaterThanOrEqualToThreshold --alarm-actions [SNS-TOPIC-ARN]`  
+**Name**: `AwsWinSysOps_VolumeUtilization_[INSTANCE-NAME]_[DRIVE-LETTER]`; **Threshold**: VolumeUtilization > 80 for 10 minutes; **Comment**: 1 alarm for each drive|`aws cloudwatch put-metric-alarm --alarm-name AwsWinSysOps_VolumeUtilization_[INSTANCE-NAME]_[DRIVE-LETTER] --alarm-description 'Alarm when Disk Space exceeds 80 percent' --metric-name VolumeUtilization --namespace System/Windows --statistic Average --period 300 --threshold 80 --comparison-operator GreaterThanThreshold  --dimensions  Name=InstanceId,Value=[INSTANCE-ID] Name=Drive-Letter,Value=[DRIVE-LETTER]:  --evaluation-periods 2 --unit Percent --alarm-actions [SNS-TOPIC-ARN]`  
 
 ## License
 
