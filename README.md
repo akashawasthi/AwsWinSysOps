@@ -7,18 +7,25 @@
 **Note**: In order to maintain a single *installation* of AwsWinSysOps in your environment, it is recommended that you place AwsWinSysOps in a *shared folder* that is accessible from each instance that needs to be monitored. However, you can also place it on each of your instances if you wish.  
 
 ## 1. AwsWinSysOps scripts
-* **AwsWinSysOps_Config.bat**: contains Windows credentials and other settings  
+### 1.1 **AwsWinSysOps_Config.bat**  
+ * contains Windows credentials and other settings  
  * ![Action](./etc/action01.png) **Action**: Edit the file to update your Windows Username and Password.  
-* **awscreds.conf**: contains AWS credentials  
+### 1.2 **awscreds.conf**  
+ * contains AWS credentials  
  * ![Action](./etc/action01.png) **Action**: Create an AWS Identity and Access Management (IAM) user with at least [CloudWatch PutMetricData](http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/UsingIAM.html "AWS Documentation") permissions.  
  * ![Action](./etc/action01.png) **Action**: Edit the file to update your AWS AccessKeyId and SecretKey.  
-* **AwsWinSysOps_CreateTask.bat**: contains [schtasks](https://msdn.microsoft.com/en-us/library/windows/desktop/bb736357.aspx "Microsoft Windows Documentation") command to create a *Windows Scheduled Task* on each instance that needs to be monitored  
+### 1.3 **AwsWinSysOps_CreateTask.bat**  
+ * contains [schtasks](https://msdn.microsoft.com/en-us/library/windows/desktop/bb736357.aspx "Microsoft Windows Documentation") command to create a *Windows Scheduled Task* on each instance that needs to be monitored  
  * ![Action](./etc/action01.png) **Action**: On **each instance** that needs to be monitored, open command prompt (*Run as Administrator*) and run `"\\<SERVER_IP_OR_NAME>\<SHARED_FOLDER>\AwsWinSysOps\AwsWinSysOps_CreateTask.bat"`.  
-* **AwsWinSysOps_Execute.bat**: contains *PowerShell* commands to execute the *.ps1* monitoring scripts that capture instance metrics and send them to AWS CloudWatch. Later, these metrics can be used to create CloudWatch Alarms/Notifications.  
+### 1.4 **AwsWinSysOps_Execute.bat**  
+ * contains *PowerShell* commands to execute the *.ps1* monitoring scripts that capture instance metrics and send them to AWS CloudWatch. Later, these metrics can be used to create CloudWatch Alarms/Notifications.  
  * ![Action](./etc/action01.png) **Action**: None. This will be executed every 5 minutes from the *Windows Scheduled Task* on each instance that is being monitored.  
-* **AwsWinSysOps_CreateAlarms.bat**: contains AWS CLI batch commands to create CloudWatch Alarms/Notifications using the instance metrics captured earlier. Review *#5* below before proceeding.  
+### 1.5 **AwsWinSysOps_CreateAlarms.bat**  
+ * contains AWS CLI batch commands to create CloudWatch Alarms/Notifications using the instance metrics captured earlier. Review *#5* below before proceeding.  
  * ![Action](./etc/action01.png) **Action**: Edit the file to update your `SNS-TOPIC-ARN`. (See *#5.2* below)  
  * ![Action](./etc/action01.png) **Action**: From **an instance configured for AWS CLI**, open command prompt (*Run as Administrator*) and run `"\\<SERVER_IP_OR_NAME>\<SHARED_FOLDER>\AwsWinSysOps\AwsWinSysOps_CreateAlarms.bat"`. Note: This needs to be executed only **once** as it iterates through all instances and creates the alarms. See *#5* below for further reference to *AWS CLI*, *SNS* & *CloudWatch Alarms*.  
+
+**Note**: Including *#1.3* above in your 'base' [AMI (Amazon Machine Image)](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html "AWS Documentation") that is used to spin up new instances will make the monitoring out-of-the-box.  
 
 ## 2. Amazon CloudWatch Monitoring Windows scripts
 These are provided bundled as-is in folder *AmazonCloudWatchMonitoringWindows*. Original package is made available by AWS [here](http://aws.amazon.com/code/7932034889155460 "AWS Sample Code & Libraries"). Refer to [Jeff Barr's blog post](http://aws.amazon.com/blogs/aws/amazon-cloudwatch-monitoring-scripts-for-microsoft-windows "AWS Official Blog") and [documentation](http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/mon-scripts-powershell.html "AWS Documentation") for additional details.  
